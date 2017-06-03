@@ -1,10 +1,25 @@
 """
 Train the database with the tweet column of your Twitter archive.
 """
-from bot import TwitterBot
+from twitterbot import TwitterBot
+from markov import Markov
+
+
+tweet_data = 'data/test_tweet_data.txt'
+clean_data = 'data/cleaned_tweet_data.txt'
+markov_bot = Markov()
+
+
+def generate_word(data_file):
+    with open(data_file, 'r') as f:
+        for line in f:
+            for word in line.split():
+                yield word
 
 
 if __name__ == '__main__':
-    with open('data/test_tweet_data.txt', 'r') as f1:
-        with open('data/cleaned_tweet_data.txt', 'w') as f2:
-            f2.write(TwitterBot.clean_data(f1.read()))
+    with open(clean_data, 'w') as f1:
+        with open(tweet_data, 'r') as f2:
+            f1.write(TwitterBot.clean_data(f2.read()))
+    gen = generate_word(clean_data)
+    markov_bot.update_db(gen)

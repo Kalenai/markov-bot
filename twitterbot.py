@@ -1,10 +1,11 @@
-from markov import Markov
-import psycopg2
+#!/usr/bin/env
 import re
+import psycopg2
+
 import config
+from markov import Markov
 
-
-bot = Markov()
+markov_bot = Markov()
 
 
 class TwitterBot(object):
@@ -13,7 +14,7 @@ class TwitterBot(object):
     This contains methods for connecting to the Twitter API to interact with the bot account.
     """
     def __init__(self):
-        pass
+        self.last_id_seen = None
 
     def _connect_api(self):
         """
@@ -29,10 +30,12 @@ class TwitterBot(object):
         tweet_data = re.sub(r'\b(RT) .+', '', tweet_data) # Retweets
         tweet_data = re.sub(r'\S*(@|\#|(http)|(www\.))\S+', '', tweet_data) # URLs, emails, hashtags, usernames
         tweet_data = re.sub(r'\(\)', '', tweet_data) # Misc junk
-        tweet_data = re.sub(r'\s+', ' ', tweet_data) # Replace whitespace with single spaces
+        tweet_data = re.sub(r' +', ' ', tweet_data) # Single space it all
+        tweet_data = re.sub(r'\n+', '\n', tweet_data) # Extra newlines
+        tweet_data = re.sub(r'[\t\r\f]*', '', tweet_data) # Extra whitespace
+        tweet_data = re.sub(r'^ ', '', tweet_data, flags=re.MULTILINE) # Leading spaces
         return tweet_data
 
 
 if __name__ == 'main':
     pass
-    
