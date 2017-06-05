@@ -5,7 +5,7 @@ from twitterbot import TwitterBot
 from markov import Markov
 
 
-tweet_data = 'data/test_tweet_data.txt'
+tweet_data = 'data/tweet_data.txt'
 clean_data = 'data/cleaned_tweet_data.txt'
 markov_bot = Markov()
 
@@ -22,4 +22,7 @@ if __name__ == '__main__':
         with open(tweet_data, 'r') as f2:
             f1.write(TwitterBot.clean_data(f2.read()))
     gen = generate_word(clean_data)
-    markov_bot.update_db(gen)
+    # markov_bot.update_db(gen)
+    for _ in range(10):
+        print(markov_bot.generate_sentence())
+        print('******')

@@ -3,5 +3,6 @@ CREATE TABLE transition (
     second_word VARCHAR,
     result_word VARCHAR,
     frequency INTEGER,
-    PRIMARY KEY(first_word, second_word)
+    beginning BOOLEAN,
+    PRIMARY KEY(first_word, second_word, result_word)
 );
