@@ -27,13 +27,16 @@ class TwitterBot(object):
         """
         Clean the Twitter data and space it into single-spaced clauses with no linebreaks
         """
-        tweet_data = re.sub(r'\b(RT) .+', '', tweet_data) # Retweets
-        tweet_data = re.sub(r'\S*(@|\#|(http)|(www\.))\S+', '', tweet_data) # URLs, emails, hashtags, usernames
-        tweet_data = re.sub(r'\(\)', '', tweet_data) # Misc junk
-        tweet_data = re.sub(r' +', ' ', tweet_data) # Single space it all
-        tweet_data = re.sub(r'\n+', '\n', tweet_data) # Extra newlines
-        tweet_data = re.sub(r'[\t\r\f]*', '', tweet_data) # Extra whitespace
-        tweet_data = re.sub(r'^ ', '', tweet_data, flags=re.MULTILINE) # Leading spaces
+        tweet_data = re.sub(r'\b(RT) .+', '', tweet_data)  # Retweets
+        tweet_data = re.sub(r'\S*(@|\#|(http)|(www\.))\S+', '', tweet_data)  # URLs, emails, hashtags, usernames
+        tweet_data = re.sub(r'\(\)', '', tweet_data)  # Misc junk
+        tweet_data = re.sub(r'&gt;', '>', tweet_data)  # Fix > signs
+        tweet_data = re.sub(r'&lt;', '<', tweet_data)  # Fix < signs
+        tweet_data = re.sub(r'&amp;', '&', tweet_data)  # Fix ampersands
+        tweet_data = re.sub(r' +', ' ', tweet_data)  # Single space it all
+        tweet_data = re.sub(r'\n+', '\n', tweet_data)  # Extra newlines
+        tweet_data = re.sub(r'[\t\r\f]*', '', tweet_data)  # Extra whitespace
+        tweet_data = re.sub(r'^ ', '', tweet_data, flags=re.MULTILINE)  # Leading spaces
         return tweet_data
 
 

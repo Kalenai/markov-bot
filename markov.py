@@ -119,7 +119,7 @@ class Markov(object):
                 FROM transition
                 WHERE first_word = %(first)s AND second_word = %(second)s;
                 """,
-                {'first' : sentence[-2],
+                {'first': sentence[-2],
                  'second': sentence[-1]}
                 )
             words, probs = zip(*self.cur.fetchall())
