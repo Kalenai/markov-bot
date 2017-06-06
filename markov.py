@@ -2,7 +2,7 @@
 import numpy as np
 import psycopg2
 
-import testconfig
+import config
 
 
 class Markov(object):
@@ -23,8 +23,8 @@ class Markov(object):
         """
         try:
             self.conn = psycopg2.connect(
-                dbname=testconfig.DATABASE_NAME,
-                user=testconfig.DATABASE_USER
+                dbname=config.DATABASE_NAME,
+                user=config.DATABASE_USER
                 )
             self.cur = self.conn.cursor()
         except psycopg2.Error as e:

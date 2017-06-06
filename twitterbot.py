@@ -1,6 +1,6 @@
 #!/usr/bin/env
 import re
-import psycopg2
+import twitter
 
 import config
 from markov import Markov
@@ -14,11 +14,27 @@ class TwitterBot(object):
     This contains methods for connecting to the Twitter API to interact with the bot account.
     """
     def __init__(self):
+        self.api = None
         self.last_id_seen = None
 
     def _connect_api(self):
         """
-        Returns a connection to the Twitter API.
+        Establish a connection to the Twitter API.
+        """
+        self.api = twitter.Api(consumer_key=config.CONSUMER_KEY,
+                               consumer_secret=config.CONSUMER_SECRET,
+                               access_token_key=config.ACCESS_TOKEN_KEY,
+                               access_token_secret=config.ACCESS_TOKEN_SECRET)
+
+    def get_tweets(self):
+        """
+        Get the most recent tweets, add them to the queue file, and update the last ID seen.
+        """
+        pass
+
+    def compose_tweet(self):
+        """
+        Compose and post a tweet.
         """
         pass
 

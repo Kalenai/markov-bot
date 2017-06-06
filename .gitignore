@@ -66,4 +66,4 @@ vagrant/
 Vagrantfile
 db.sqlite3
 ubuntu-xenial-16.04-cloudimg-console.log
-testconfig.py
+config.py
