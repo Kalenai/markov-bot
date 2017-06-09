@@ -1,4 +1,5 @@
 #!/usr/bin/env
+import logging
 import numpy as np
 import psycopg2
 
@@ -102,7 +103,7 @@ class Markov(object):
             """
         )
         begin = self.cur.fetchone()
-        print(begin)
+        logging.info(begin)
         sentence.append(begin[0])
         sentence.append(begin[1])
 

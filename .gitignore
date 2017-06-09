@@ -62,8 +62,9 @@ target/
 # Vagrant
 .vagrant/
 data/
-vagrant/
+vagrant_setup.sh
 Vagrantfile
 db.sqlite3
 ubuntu-xenial-16.04-cloudimg-console.log
 config.py
+.vscode/

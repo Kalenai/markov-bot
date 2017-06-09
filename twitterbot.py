@@ -1,11 +1,11 @@
 #!/usr/bin/env
+import random
 import re
+import logging
 import twitter
 
 import config
 from markov import Markov
-
-markov_bot = Markov()
 
 
 class TwitterBot(object):
@@ -16,6 +16,7 @@ class TwitterBot(object):
     def __init__(self):
         self.api = None
         self.last_id_seen = None
+        self.markov = Markov()
 
     def _connect_api(self):
         """
@@ -26,17 +27,67 @@ class TwitterBot(object):
                                access_token_key=config.ACCESS_TOKEN_KEY,
                                access_token_secret=config.ACCESS_TOKEN_SECRET)
 
-    def get_tweets(self):
-        """
-        Get the most recent tweets, add them to the queue file, and update the last ID seen.
-        """
-        pass
-
     def compose_tweet(self):
         """
         Compose and post a tweet.
         """
-        pass
+        tweet = ""
+
+        # Generate the first sentence
+        while True:
+            test_sentence = self.markov.generate_sentence()
+            if len(test_sentence) <= 140:
+                tweet = test_sentence
+                break
+
+        # If there's room, have a chance at adding a second sentence
+        # IDEA: generate a bunch of sentences to determine the average length
+        # of one sentence to tune these variables a bit.
+        if len(tweet) < 80 and random.random() < 0.65:
+            while True:
+                test_sentence = self.markov.generate_sentence()
+                if len(tweet + " " + test_sentence) <= 140:
+                    tweet = tweet + " " + test_sentence
+                    break
+        # Randomly capitalize a short tweet
+        if len(tweet) < 60 and random.random() < 0.35:
+            tweet = tweet.upper()
+        # IDEA: Add a parameter to pass markov.generate_sentence() a set beginning.
+        # Use this to sometimes generate RP-type messages​
+
+        return tweet
+
+    def get_tweets(self):
+        """
+        Get the most recent tweets and update the last ID seen.
+        """
+        if self.api is None:
+            self._connect_api()
+        tweets = self.api.GetUserTimeline(screen_name=config.SOURCE_ACCOUNT,
+                                          since_id=self.last_id_seen,
+                                          trim_user=True)
+        if tweets:
+            self.last_id_seen = tweets[0].id
+            logging.info("Setting last_id_seen to: " + str(self.last_id_seen))
+        return tweets
+
+    def update_tweet_database(self):
+        """
+        Have the markov bot update its database with the most recent tweets.
+        """
+        tweets = self.get_tweets()
+
+        if not tweets:
+            logging.info("Database is up to date with the latest ID seen.")
+            return
+
+        def _tweet_data_gen(tweets):
+            for status in tweets:
+                tweet = self.clean_data(status.text)
+                for word in tweet.split():
+                    yield word
+
+        self.markov.update_db(_tweet_data_gen(tweets))
 
     @staticmethod
     def clean_data(tweet_data):
@@ -56,5 +107,10 @@ class TwitterBot(object):
         return tweet_data
 
 
-if __name__ == 'main':
-    pass
+if __name__ == "__main__":
+    bot = TwitterBot()
+    bot.last_id_seen = 868637689578307584
+    # bot.update_tweet_database()
+    for _ in range(10):
+        print(bot.compose_tweet())
+        print("******")
