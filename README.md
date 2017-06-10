@@ -1,6 +1,6 @@
-## What is This?
-This is a Twitter bot, designed to use Markov Chains to create tweets
+## What is this?
+This is my own version of a Twitter bot, using Markov Chains to create tweets
 and post them to a Twitter account.
 
-There's not a whole lot going on here just yet.
-Very much still a work in progress.
+Although the basic functionality is here now, it still has some extra features
+and quite a bit of polish to go before I'm ready to call it finished.

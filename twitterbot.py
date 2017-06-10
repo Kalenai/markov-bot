@@ -1,7 +1,8 @@
 #!/usr/bin/env
+import json
+import logging
 import random
 import re
-import logging
 import twitter
 
 import config
@@ -9,6 +10,8 @@ from markov import Markov
 
 if config.DEBUG is True:
     logging.basicConfig(level=logging.DEBUG)
+
+bot_data = 'data/bot_data.json'
 
 
 class TwitterBot(object):
@@ -36,7 +39,7 @@ class TwitterBot(object):
         """
         if self.api is None:
             self._connect_api()
-            
+
         tweet = ""
 
         def add_sentence(tweet):
@@ -122,6 +125,7 @@ class TwitterBot(object):
 
 if __name__ == "__main__":
     bot = TwitterBot()
-    bot.last_id_seen = 868637689578307584
-    # bot.update_tweet_database()
+    with open(bot_data, 'r') as f:
+        bot.last_id_seen = json.load(f)['last_id_seen']
+    bot.update_tweet_database()
     bot.compose_tweet()

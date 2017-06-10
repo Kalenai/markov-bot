@@ -30,7 +30,7 @@ if __name__ == '__main__':
         for line in dataframe.text.iteritems():
             f.write(TwitterBot.clean_data(line[1] + "\n"))
     gen = generate_word(clean_data)
-    # markov_bot.update_db(gen)
+    markov_bot.update_db(gen)
 
     with open(bot_data, 'w') as f:
         json.dump({"last_id_seen": int(dataframe.tweet_id[0])}, f)
