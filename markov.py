@@ -29,7 +29,7 @@ class Markov(object):
                 )
             self.cur = self.conn.cursor()
         except psycopg2.Error as e:
-            print(e, "Could not connect to database.", sep='\n')
+            print(e, "Could not connect to database.", sep='')
 
     def _disconnect_db(self):
         """
@@ -49,6 +49,9 @@ class Markov(object):
         Update the transition matrix database with the most recent data.
         """
         self._connect_db()
+        if self.conn is None or self.cur is None:
+            logging.error("Was not able to establish connection to the database. Check your config file.")
+            return
 
         # Add the row if it doesn't exist, else iterate the frequency counter by 1
         upsert_db = """
@@ -84,7 +87,7 @@ class Markov(object):
         self.conn.commit()
         self._disconnect_db()
 
-    def generate_sentence(self):
+    def generate_sentence(self, beginning=None):
         """
         Generate a new sentence using the transition matrix.
         """
@@ -92,18 +95,20 @@ class Markov(object):
 
         sentence = []
 
-        # Choose a starting pair of words.
-        self.cur.execute(
-            """
-            SELECT first_word, second_word \
-            FROM transition \
-            WHERE beginning = True \
-            ORDER BY RANDOM() \
-            LIMIT 1;
-            """
-        )
-        begin = self.cur.fetchone()
-        logging.info(begin)
+        if beginning is None:
+            # Choose a starting pair of words.
+            self.cur.execute(
+                """
+                SELECT first_word, second_word \
+                FROM transition \
+                WHERE beginning = True \
+                ORDER BY RANDOM() \
+                LIMIT 1;
+                """
+            )
+            begin = self.cur.fetchone()
+
+        logging.debug("Current beginning:" + str(begin))
         sentence.append(begin[0])
         sentence.append(begin[1])
 
@@ -134,6 +139,7 @@ class Markov(object):
 
             # Choose the next word and add it to the sentence
             next_word = np.random.choice(words, p=probs)
+            logging.debug("Adding next word:" + str(next_word))
             sentence.append(next_word)
 
         self._disconnect_db()

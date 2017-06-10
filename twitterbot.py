@@ -7,6 +7,9 @@ import twitter
 import config
 from markov import Markov
 
+if config.DEBUG is True:
+    logging.basicConfig(level=logging.DEBUG)
+
 
 class TwitterBot(object):
     """
@@ -31,31 +34,41 @@ class TwitterBot(object):
         """
         Compose and post a tweet.
         """
+        if self.api is None:
+            self._connect_api()
+            
         tweet = ""
 
-        # Generate the first sentence
-        while True:
-            test_sentence = self.markov.generate_sentence()
-            if len(test_sentence) <= 140:
-                tweet = test_sentence
-                break
-
-        # If there's room, have a chance at adding a second sentence
-        # IDEA: generate a bunch of sentences to determine the average length
-        # of one sentence to tune these variables a bit.
-        if len(tweet) < 80 and random.random() < 0.65:
+        def add_sentence(tweet):
+            """
+            Add another sentence.
+            """
             while True:
                 test_sentence = self.markov.generate_sentence()
                 if len(tweet + " " + test_sentence) <= 140:
-                    tweet = tweet + " " + test_sentence
-                    break
+                    return test_sentence
+
+        # Generate the first sentence
+        tweet = tweet + " " + add_sentence(tweet)
+
+        # If there's room, have a chance at adding a second sentence
+        if len(tweet) < 70 and random.random() < 0.65:
+            logging.info("Adding another sentence")
+            tweet = tweet + " " + add_sentence(tweet)
+
+            # Sometimes add one more.
+            if len(tweet) < 90 and random.random() < 0.25:
+                tweet = tweet + " " + add_sentence(tweet)
+
         # Randomly capitalize a short tweet
         if len(tweet) < 60 and random.random() < 0.35:
             tweet = tweet.upper()
-        # IDEA: Add a parameter to pass markov.generate_sentence() a set beginning.
-        # Use this to sometimes generate RP-type messages​
 
-        return tweet
+        # IDEA: Add a parameter to pass markov.generate_sentence() a set beginning.
+        #       Use this to sometimes generate RP-type messages​
+
+        status = self.api.PostUpdate(tweet)
+        print(status.text.encode('utf-8'))
 
     def get_tweets(self):
         """
@@ -96,7 +109,7 @@ class TwitterBot(object):
         """
         tweet_data = re.sub(r'\b(RT) .+', '', tweet_data)  # Retweets
         tweet_data = re.sub(r'\S*(@|\#|(http)|(www\.))\S+', '', tweet_data)  # URLs, emails, hashtags, usernames
-        tweet_data = re.sub(r'\(\)', '', tweet_data)  # Misc junk
+        tweet_data = re.sub(r'\(\)|\"', '', tweet_data)  # Misc junk
         tweet_data = re.sub(r'&gt;', '>', tweet_data)  # Fix > signs
         tweet_data = re.sub(r'&lt;', '<', tweet_data)  # Fix < signs
         tweet_data = re.sub(r'&amp;', '&', tweet_data)  # Fix ampersands
@@ -111,6 +124,4 @@ if __name__ == "__main__":
     bot = TwitterBot()
     bot.last_id_seen = 868637689578307584
     # bot.update_tweet_database()
-    for _ in range(10):
-        print(bot.compose_tweet())
-        print("******")
+    bot.compose_tweet()

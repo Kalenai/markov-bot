@@ -59,12 +59,16 @@ target/
 *.ipr
 *.iws
 
+# VSCode
+.vscode/
+
 # Vagrant
 .vagrant/
-data/
 vagrant_setup.sh
 Vagrantfile
-db.sqlite3
 ubuntu-xenial-16.04-cloudimg-console.log
+
+# Project Files
+data/*
+!data/.gitkeep
 config.py
-.vscode/
