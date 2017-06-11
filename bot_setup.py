@@ -11,6 +11,8 @@ from markov import Markov
 
 if config.DEBUG is True:
     logging.basicConfig(level=logging.DEBUG)
+else:
+    logging.basicConfig(level=logging.INFO)
 
 
 tweet_data = 'data/tweets.csv'
@@ -69,4 +71,6 @@ if __name__ == '__main__':
     with open(bot_data, 'w') as f:
         last_id_seen = int(dataframe.tweet_id[0])
         logging.info("Dumping last id seen to json: " + str(last_id_seen))
-        json.dump({"last_id_seen": last_id_seen}, f)
+        json.dump({"last_id_seen": last_id_seen,
+                   "last_reply_id_seen": None,
+                   "last_mention_id_seen": None}, f)

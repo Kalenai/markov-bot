@@ -20,9 +20,21 @@ class TwitterBot(object):
     This contains methods for connecting to the Twitter API to interact with the bot account.
     """
     def __init__(self):
+        self.markov = Markov()
         self.api = None
         self.last_id_seen = None
-        self.markov = Markov()
+        self.last_reply_id_seen = None
+        self.last_mention_id_seen = None
+
+        try:
+            with open(bot_data, 'r') as f:
+                id_data = json.load(f)
+                self.last_id_seen = id_data['last_id_seen']
+                self.last_reply_id_seen = id_data['last_reply_id_seen']
+                self.last_mention_id_seen = id_data['last_mention_id_seen']
+        except FileNotFoundError:
+            # TODO: Error handling
+            pass
 
     def _connect_api(self):
         """
@@ -33,7 +45,19 @@ class TwitterBot(object):
                                access_token_key=config.ACCESS_TOKEN_KEY,
                                access_token_secret=config.ACCESS_TOKEN_SECRET)
 
-    def compose_tweet(self):
+    def _dump_data(self):
+        """
+        Dump tweet id data to json.
+        """
+        with open(bot_data, 'w') as f:
+            logging.info("Dumping last id seen to json: " + str(self.last_id_seen))
+            logging.info("Dumping reply last id seen to json: " + str(self.last_reply_id_seen))
+            logging.info("Dumping mention last id seen to json: " + str(self.last_mention_id_seen))
+            json.dump({"last_id_seen": self.last_id_seen,
+                       "last_reply_id_seen": self.last_reply_id_seen,
+                       "last_mention_id_seen": self.last_mention_id_seen}, f)
+
+    def compose_tweet(self, debug=False):
         """
         Compose and post a tweet.
         """
@@ -70,6 +94,10 @@ class TwitterBot(object):
         # IDEA: Add a parameter to pass markov.generate_sentence() a set beginning.
         #       Use this to sometimes generate RP-type messages​
 
+        if debug:
+            logging.debug("Return tweet without posting.")
+            return tweet
+
         status = self.api.PostUpdate(tweet)
         print(status.text.encode('utf-8'))
 
@@ -85,17 +113,26 @@ class TwitterBot(object):
         if tweets:
             self.last_id_seen = tweets[0].id
             logging.info("Setting last_id_seen to: " + str(self.last_id_seen))
+            self._dump_data()
         return tweets
 
     def update_tweet_database(self):
         """
         Have the markov bot update its database with the most recent tweets.
         """
-        tweets = self.get_tweets()
+        if self.api is None:
+            self._connect_api()
+        tweets = self.api.GetUserTimeline(screen_name=config.SOURCE_ACCOUNT,
+                                          since_id=self.last_id_seen,
+                                          trim_user=True)
 
         if not tweets:
             logging.info("Database is up to date with the latest ID seen.")
             return
+
+        self.last_id_seen = tweets[0].id
+        logging.info("Setting last_id_seen to: " + str(self.last_id_seen))
+        self._dump_data()
 
         def _tweet_data_gen(tweets):
             for status in tweets:
@@ -104,6 +141,14 @@ class TwitterBot(object):
                     yield word
 
         self.markov.update_db(_tweet_data_gen(tweets))
+
+    def reply_tweets(self):
+        """
+        Get all replies and mentions and respond to them.
+        """
+        if self.api is None:
+            self._connect_api()
+        replies = self.api.GetReplies()
 
     @staticmethod
     def clean_data(tweet_data):
@@ -125,7 +170,5 @@ class TwitterBot(object):
 
 if __name__ == "__main__":
     bot = TwitterBot()
-    with open(bot_data, 'r') as f:
-        bot.last_id_seen = json.load(f)['last_id_seen']
-    bot.update_tweet_database()
-    bot.compose_tweet()
+    # bot.update_tweet_database()
+    # print(bot.compose_tweet(debug=True))
