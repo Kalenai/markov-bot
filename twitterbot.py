@@ -32,18 +32,21 @@ class TwitterBot(object):
                 self.last_id_seen = id_data['last_id_seen']
                 self.last_reply_id_seen = id_data['last_reply_id_seen']
                 self.last_mention_id_seen = id_data['last_mention_id_seen']
-        except FileNotFoundError:
-            # TODO: Error handling
-            pass
+        except FileNotFoundError as e:
+            print(e, "Could not find bot_data file.  Have you run the setup script yet?", sep='')
 
     def _connect_api(self):
         """
         Establish a connection to the Twitter API.
         """
-        self.api = twitter.Api(consumer_key=config.CONSUMER_KEY,
-                               consumer_secret=config.CONSUMER_SECRET,
-                               access_token_key=config.ACCESS_TOKEN_KEY,
-                               access_token_secret=config.ACCESS_TOKEN_SECRET)
+        try:
+            self.api = twitter.Api(consumer_key=config.CONSUMER_KEY,
+                                   consumer_secret=config.CONSUMER_SECRET,
+                                   access_token_key=config.ACCESS_TOKEN_KEY,
+                                   access_token_secret=config.ACCESS_TOKEN_SECRET)
+            return self.api.VerifyCredentials()
+        except twitter.error.TwitterError as e:
+            print(e, "\nCould not connect to the Twitter API.  Check you config file credentials.")
 
     def _dump_data(self):
         """
@@ -95,7 +98,7 @@ class TwitterBot(object):
         #       Use this to sometimes generate RP-type messages​
 
         if debug:
-            logging.debug("Return tweet without posting.")
+            logging.debug("Debug Enabled. Returning tweet without posting.")
             return tweet
 
         status = self.api.PostUpdate(tweet)
@@ -148,7 +151,8 @@ class TwitterBot(object):
         """
         if self.api is None:
             self._connect_api()
-        replies = self.api.GetReplies()
+        replies = self.api.GetReplies(since_id=self.last_reply_id_seen)
+        mentions = self.api.GetMentions(since_id=self.last_mention_id_seen)
 
     @staticmethod
     def clean_data(tweet_data):
@@ -170,5 +174,5 @@ class TwitterBot(object):
 
 if __name__ == "__main__":
     bot = TwitterBot()
-    # bot.update_tweet_database()
-    # print(bot.compose_tweet(debug=True))
+    bot.update_tweet_database()
+    print(bot.compose_tweet(debug=True))
