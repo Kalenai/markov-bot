@@ -60,16 +60,27 @@ class TwitterBot(object):
                        "last_reply_id_seen": self.last_reply_id_seen,
                        "last_mention_id_seen": self.last_mention_id_seen}, f)
 
-    def compose_tweet(self, debug=False):
+    def _post_tweet(self, status, debug=False):
         """
-        Compose and post a tweet.
+        Post a status to Twitter.
         """
         if self.api is None:
             self._connect_api()
 
+        if debug:
+            logging.debug("Debug Enabled. Returning tweet without posting.")
+            return status
+
+        status = self.api.PostUpdate(status)
+        print(status.text.encode('utf-8'))
+
+    def _compose_tweet(self):
+        """
+        Compose and return a tweet.
+        """
         tweet = ""
 
-        def add_sentence(tweet):
+        def _add_sentence(tweet):
             """
             Add another sentence.
             """
@@ -79,45 +90,42 @@ class TwitterBot(object):
                     return test_sentence
 
         # Generate the first sentence
-        tweet = tweet + " " + add_sentence(tweet)
+        tweet = tweet + " " + _add_sentence(tweet)
 
         # If there's room, have a chance at adding a second sentence
         if len(tweet) < 70 and random.random() < 0.65:
             logging.info("Adding another sentence")
-            tweet = tweet + " " + add_sentence(tweet)
+            tweet = tweet + " " + _add_sentence(tweet)
 
             # Sometimes add one more.
             if len(tweet) < 90 and random.random() < 0.25:
-                tweet = tweet + " " + add_sentence(tweet)
+                tweet = tweet + " " + _add_sentence(tweet)
 
         # Randomly capitalize a short tweet
         if len(tweet) < 60 and random.random() < 0.35:
             tweet = tweet.upper()
 
-        # IDEA: Add a parameter to pass markov.generate_sentence() a set beginning.
-        #       Use this to sometimes generate RP-type messages​
+        return tweet    
 
-        if debug:
-            logging.debug("Debug Enabled. Returning tweet without posting.")
-            return tweet
-
-        status = self.api.PostUpdate(tweet)
-        print(status.text.encode('utf-8'))
-
-    def get_tweets(self):
+    def new_tweet(self):
         """
-        Get the most recent tweets and update the last ID seen.
+        Compose and post a new tweet.
+        """
+        tweet = self._compose_tweet()
+        self._post_tweet(tweet)
+
+    def reply_tweets(self):
+        """
+        Get all replies and mentions and respond to them.
         """
         if self.api is None:
             self._connect_api()
-        tweets = self.api.GetUserTimeline(screen_name=config.SOURCE_ACCOUNT,
-                                          since_id=self.last_id_seen,
-                                          trim_user=True)
-        if tweets:
-            self.last_id_seen = tweets[0].id
-            logging.info("Setting last_id_seen to: " + str(self.last_id_seen))
-            self._dump_data()
-        return tweets
+        replies = self.api.GetReplies(since_id=self.last_reply_id_seen)
+        mentions = self.api.GetMentions(since_id=self.last_mention_id_seen)
+
+        # TODO: fix this for potential of multiple replies
+        self.last_reply_id_seen = replies[0].id
+        self.last_mention_id_seen = mentions[0].id
 
     def update_tweet_database(self):
         """
@@ -145,15 +153,6 @@ class TwitterBot(object):
 
         self.markov.update_db(_tweet_data_gen(tweets))
 
-    def reply_tweets(self):
-        """
-        Get all replies and mentions and respond to them.
-        """
-        if self.api is None:
-            self._connect_api()
-        replies = self.api.GetReplies(since_id=self.last_reply_id_seen)
-        mentions = self.api.GetMentions(since_id=self.last_mention_id_seen)
-
     @staticmethod
     def clean_data(tweet_data):
         """
@@ -175,4 +174,3 @@ class TwitterBot(object):
 if __name__ == "__main__":
     bot = TwitterBot()
     bot.update_tweet_database()
-    print(bot.compose_tweet(debug=True))
