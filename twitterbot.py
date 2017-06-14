@@ -24,14 +24,12 @@ class TwitterBot(object):
         self.api = None
         self.last_id_seen = None
         self.last_reply_id_seen = None
-        self.last_mention_id_seen = None
 
         try:
             with open(bot_data, 'r') as f:
                 id_data = json.load(f)
                 self.last_id_seen = id_data['last_id_seen']
                 self.last_reply_id_seen = id_data['last_reply_id_seen']
-                self.last_mention_id_seen = id_data['last_mention_id_seen']
         except FileNotFoundError as e:
             print(e, "Could not find bot_data file.  Have you run the setup script yet?", sep='')
 
@@ -55,23 +53,24 @@ class TwitterBot(object):
         with open(bot_data, 'w') as f:
             logging.info("Dumping last id seen to json: " + str(self.last_id_seen))
             logging.info("Dumping reply last id seen to json: " + str(self.last_reply_id_seen))
-            logging.info("Dumping mention last id seen to json: " + str(self.last_mention_id_seen))
             json.dump({"last_id_seen": self.last_id_seen,
-                       "last_reply_id_seen": self.last_reply_id_seen,
-                       "last_mention_id_seen": self.last_mention_id_seen}, f)
+                       "last_reply_id_seen": self.last_reply_id_seen}, f)
 
-    def _post_tweet(self, status, debug=False):
+    def _post_tweet(self, status, reply_to=None, debug=False):
         """
         Post a status to Twitter.
         """
+        # Create a connection to the API if there isn't one already
         if self.api is None:
             self._connect_api()
 
+        # Return the tweet text without posting it
         if debug:
             logging.debug("Debug Enabled. Returning tweet without posting.")
             return status
 
-        status = self.api.PostUpdate(status)
+        # Post the status
+        status = self.api.PostUpdate(status, in_reply_to_status_id=reply_to)
         print(status.text.encode('utf-8'))
 
     def _compose_tweet(self):
@@ -114,18 +113,29 @@ class TwitterBot(object):
         tweet = self._compose_tweet()
         self._post_tweet(tweet)
 
-    def reply_tweets(self):
+    def reply_tweets(self, debug=False):
         """
         Get all replies and mentions and respond to them.
         """
+        # Create a connection to the API if there isn't one already
         if self.api is None:
             self._connect_api()
-        replies = self.api.GetReplies(since_id=self.last_reply_id_seen)
-        mentions = self.api.GetMentions(since_id=self.last_mention_id_seen)
 
-        # TODO: fix this for potential of multiple replies
+        # Get any new replies or mentions
+        replies = self.api.GetMentions(since_id=self.last_reply_id_seen)
+
+        # Return None if there are no new replies
+        if replies is None:
+            logging.info("No new replies to respond to.")
+            return replies
+
+        # Update the bot with the latest reply ID seen
         self.last_reply_id_seen = replies[0].id
-        self.last_mention_id_seen = mentions[0].id
+
+        # Post a response to each reply
+        for reply in replies:
+            tweet = self._compose_tweet()
+            self._post_tweet(tweet, reply_to=reply.id, debug=debug)
 
     def update_tweet_database(self):
         """
@@ -173,4 +183,6 @@ class TwitterBot(object):
 
 if __name__ == "__main__":
     bot = TwitterBot()
-    bot.update_tweet_database()
+    # bot.update_tweet_database()
+    replies = bot.reply_tweets()
+    print(replies[0].id)

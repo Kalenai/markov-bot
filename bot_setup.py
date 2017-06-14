@@ -72,5 +72,4 @@ if __name__ == '__main__':
         last_id_seen = int(dataframe.tweet_id[0])
         logging.info("Dumping last id seen to json: " + str(last_id_seen))
         json.dump({"last_id_seen": last_id_seen,
-                   "last_reply_id_seen": None,
-                   "last_mention_id_seen": None}, f)
+                   "last_reply_id_seen": None}, f)
