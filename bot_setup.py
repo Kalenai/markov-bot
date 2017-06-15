@@ -1,3 +1,4 @@
+#!/usr/bin/env
 """
 Setup the application with your Twitter archive file.
 """
@@ -14,17 +15,16 @@ if config.DEBUG is True:
 else:
     logging.basicConfig(level=logging.INFO)
 
-
-tweet_data = 'data/tweets.csv'
-clean_data = 'data/cleaned_tweet_data.txt'
-bot_data = 'data/bot_data.json'
+tweet_data_file = 'data/tweets.csv'
+clean_data_file = 'data/cleaned_tweet_data.txt'
+bot_data_file = 'data/bot_data.json'
 
 markov = Markov()
 twitterbot = TwitterBot()
 
 
 def generate_word(clean_data):
-    with open(clean_data, 'r') as f:
+    with open(clean_data_file, 'r') as f:
         for line in f:
             for word in line.split():
                 yield word
@@ -62,13 +62,13 @@ if __name__ == '__main__':
     markov._disconnect_db()
 
     logging.info("Cleaning up Twitter data.")
-    dataframe = pd.read_csv(tweet_data)
-    with open(clean_data, 'r+') as f:
+    dataframe = pd.read_csv(tweet_data_file)
+    with open(clean_data_file, 'r+') as f:
         for line in dataframe.text.iteritems():
             f.write(twitterbot.clean_data(line[1] + "\n"))
 
     logging.info("Training the database.")
-    gen = generate_word(clean_data)
+    gen = generate_word(clean_data_file)
     markov.update_db(gen)
 
     twitterbot._connect_api()

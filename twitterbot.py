@@ -14,7 +14,7 @@ else:
     logging.basicConfig(level=logging.INFO)
 
 # The JSON dump file for last IDs seen.
-bot_data = 'data/bot_data.json'
+bot_data_file = 'data/bot_data.json'
 
 
 class TwitterBot(object):
@@ -30,7 +30,7 @@ class TwitterBot(object):
 
         # Attempt to collect the last IDs seen from the JSON dump file.
         try:
-            with open(bot_data, 'r') as f:
+            with open(bot_data_file, 'r') as f:
                 id_data = json.load(f)
                 self.last_id_seen = id_data['last_id_seen']
                 self.last_reply_id_seen = id_data['last_reply_id_seen']
@@ -121,7 +121,7 @@ class TwitterBot(object):
         """
         Dump tweet id data to json.
         """
-        with open(bot_data, 'w') as f:
+        with open(bot_data_file, 'w') as f:
             logging.info("Dumping last id seen to json: " + str(self.last_id_seen))
             logging.info("Dumping reply last id seen to json: " + str(self.last_reply_id_seen))
             json.dump({"last_id_seen": self.last_id_seen,
