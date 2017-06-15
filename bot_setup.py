@@ -15,9 +15,9 @@ if config.DEBUG is True:
 else:
     logging.basicConfig(level=logging.INFO)
 
-tweet_data_file = 'data/tweets.csv'
-clean_data_file = 'data/cleaned_tweet_data.txt'
-bot_data_file = 'data/bot_data.json'
+tweet_data_file = config.TWEET_DATA_FILE
+clean_data_file = config.CLEAN_DATA_FILE
+bot_data_file = config.BOT_DATA_FILE
 
 markov = Markov()
 twitterbot = TwitterBot()

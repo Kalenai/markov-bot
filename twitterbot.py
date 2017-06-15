@@ -14,7 +14,7 @@ else:
     logging.basicConfig(level=logging.INFO)
 
 # The JSON dump file for last IDs seen.
-bot_data_file = 'data/bot_data.json'
+bot_data_file = config.BOT_DATA_FILE
 
 
 class TwitterBot(object):
