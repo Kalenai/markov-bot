@@ -19,7 +19,8 @@ tweet_data = 'data/tweets.csv'
 clean_data = 'data/cleaned_tweet_data.txt'
 bot_data = 'data/bot_data.json'
 
-markov_bot = Markov()
+markov = Markov()
+twitterbot = TwitterBot()
 
 
 def generate_word(clean_data):
@@ -31,8 +32,8 @@ def generate_word(clean_data):
 
 if __name__ == '__main__':
     logging.info("Connecting to the database.")
-    markov_bot._connect_db()
-    table_exists = markov_bot.cur.execute(
+    markov._connect_db()
+    markov.cur.execute(
         """
         SELECT EXISTS(SELECT 1 FROM information_schema.tables \
         WHERE table_catalog=%(db_name)s \
@@ -41,9 +42,11 @@ if __name__ == '__main__':
         """,
         {'db_name': config.DATABASE_NAME}
     )
+    table_exists = markov.cur.fetchone()[0]
+
     if not table_exists:
         logging.info("Transition table does not exist.  Creating it now...")
-        markov_bot.cur.execute(
+        markov.cur.execute(
             """
             CREATE TABLE transition ( \
             first_word VARCHAR, \
@@ -55,21 +58,25 @@ if __name__ == '__main__':
             );
             """
         )
-    markov_bot.conn.commit()
-    markov_bot._disconnect_db()
+    markov.conn.commit()
+    markov._disconnect_db()
 
     logging.info("Cleaning up Twitter data.")
     dataframe = pd.read_csv(tweet_data)
     with open(clean_data, 'r+') as f:
         for line in dataframe.text.iteritems():
-            f.write(TwitterBot.clean_data(line[1] + "\n"))
+            f.write(twitterbot.clean_data(line[1] + "\n"))
 
     logging.info("Training the database.")
     gen = generate_word(clean_data)
-    markov_bot.update_db(gen)
+    markov.update_db(gen)
 
-    with open(bot_data, 'w') as f:
-        last_id_seen = int(dataframe.tweet_id[0])
-        logging.info("Dumping last id seen to json: " + str(last_id_seen))
-        json.dump({"last_id_seen": last_id_seen,
-                   "last_reply_id_seen": None}, f)
+    twitterbot._connect_api()
+    last_id_seen = int(dataframe.tweet_id[0])
+    replies = twitterbot.api.GetMentions()
+    if replies is not None:
+        last_reply_id_seen = replies[0].id
+    else:
+        last_reply_id_seen = None
+    twitterbot.last_id_seen, twitterbot.last_reply_id_seen = last_id_seen, last_reply_id_seen
+    twitterbot.dump_data()

@@ -10,7 +10,10 @@ from markov import Markov
 
 if config.DEBUG is True:
     logging.basicConfig(level=logging.DEBUG)
+else:
+    logging.basicConfig(level=logging.INFO)
 
+# The JSON dump file for last IDs seen.
 bot_data = 'data/bot_data.json'
 
 
@@ -25,6 +28,7 @@ class TwitterBot(object):
         self.last_id_seen = None
         self.last_reply_id_seen = None
 
+        # Attempt to collect the last IDs seen from the JSON dump file.
         try:
             with open(bot_data, 'r') as f:
                 id_data = json.load(f)
@@ -45,33 +49,6 @@ class TwitterBot(object):
             return self.api.VerifyCredentials()
         except twitter.error.TwitterError as e:
             print(e, "\nCould not connect to the Twitter API.  Check you config file credentials.")
-
-    def _dump_data(self):
-        """
-        Dump tweet id data to json.
-        """
-        with open(bot_data, 'w') as f:
-            logging.info("Dumping last id seen to json: " + str(self.last_id_seen))
-            logging.info("Dumping reply last id seen to json: " + str(self.last_reply_id_seen))
-            json.dump({"last_id_seen": self.last_id_seen,
-                       "last_reply_id_seen": self.last_reply_id_seen}, f)
-
-    def _post_tweet(self, status, reply_to=None, debug=False):
-        """
-        Post a status to Twitter.
-        """
-        # Create a connection to the API if there isn't one already
-        if self.api is None:
-            self._connect_api()
-
-        # Return the tweet text without posting it
-        if debug:
-            logging.debug("Debug Enabled. Returning tweet without posting.")
-            return status
-
-        # Post the status
-        status = self.api.PostUpdate(status, in_reply_to_status_id=reply_to)
-        print(status.text.encode('utf-8'))
 
     def _compose_tweet(self):
         """
@@ -104,7 +81,51 @@ class TwitterBot(object):
         if len(tweet) < 60 and random.random() < 0.35:
             tweet = tweet.upper()
 
-        return tweet    
+        return tweet
+
+    def _post_tweet(self, status, reply_to=None, debug=False):
+        """
+        Post a status to Twitter.
+        """
+        # Create a connection to the API if there isn't one already
+        if self.api is None:
+            self._connect_api()
+
+        # Return the tweet text without posting it
+        if debug:
+            logging.debug("Debug Enabled. Returning tweet without posting.")
+            return status
+
+        # Post the status
+        status = self.api.PostUpdate(status, in_reply_to_status_id=reply_to)
+        print(status.text.encode('utf-8'))
+
+    @staticmethod
+    def clean_data(tweet_data):
+        """
+        Clean the Twitter data and space it into single-spaced clauses with no linebreaks
+        """
+        tweet_data = re.sub(r'\b(RT) .+', '', tweet_data)  # Retweets
+        tweet_data = re.sub(r'\S*(@|\#|(http)|(www\.))\S+', '', tweet_data)  # URLs, emails, hashtags, usernames
+        tweet_data = re.sub(r'\(\)|\"', '', tweet_data)  # Misc junk
+        tweet_data = re.sub(r'&gt;', '>', tweet_data)  # Fix > signs
+        tweet_data = re.sub(r'&lt;', '<', tweet_data)  # Fix < signs
+        tweet_data = re.sub(r'&amp;', '&', tweet_data)  # Fix ampersands
+        tweet_data = re.sub(r' +', ' ', tweet_data)  # Single space it all
+        tweet_data = re.sub(r'\n+', '\n', tweet_data)  # Extra newlines
+        tweet_data = re.sub(r'[\t\r\f]*', '', tweet_data)  # Extra whitespace
+        tweet_data = re.sub(r'^ ', '', tweet_data, flags=re.MULTILINE)  # Leading spaces
+        return tweet_data
+
+    def dump_data(self):
+        """
+        Dump tweet id data to json.
+        """
+        with open(bot_data, 'w') as f:
+            logging.info("Dumping last id seen to json: " + str(self.last_id_seen))
+            logging.info("Dumping reply last id seen to json: " + str(self.last_reply_id_seen))
+            json.dump({"last_id_seen": self.last_id_seen,
+                       "last_reply_id_seen": self.last_reply_id_seen}, f)
 
     def new_tweet(self):
         """
@@ -153,7 +174,6 @@ class TwitterBot(object):
 
         self.last_id_seen = tweets[0].id
         logging.info("Setting last_id_seen to: " + str(self.last_id_seen))
-        self._dump_data()
 
         def _tweet_data_gen(tweets):
             for status in tweets:
@@ -162,23 +182,6 @@ class TwitterBot(object):
                     yield word
 
         self.markov.update_db(_tweet_data_gen(tweets))
-
-    @staticmethod
-    def clean_data(tweet_data):
-        """
-        Clean the Twitter data and space it into single-spaced clauses with no linebreaks
-        """
-        tweet_data = re.sub(r'\b(RT) .+', '', tweet_data)  # Retweets
-        tweet_data = re.sub(r'\S*(@|\#|(http)|(www\.))\S+', '', tweet_data)  # URLs, emails, hashtags, usernames
-        tweet_data = re.sub(r'\(\)|\"', '', tweet_data)  # Misc junk
-        tweet_data = re.sub(r'&gt;', '>', tweet_data)  # Fix > signs
-        tweet_data = re.sub(r'&lt;', '<', tweet_data)  # Fix < signs
-        tweet_data = re.sub(r'&amp;', '&', tweet_data)  # Fix ampersands
-        tweet_data = re.sub(r' +', ' ', tweet_data)  # Single space it all
-        tweet_data = re.sub(r'\n+', '\n', tweet_data)  # Extra newlines
-        tweet_data = re.sub(r'[\t\r\f]*', '', tweet_data)  # Extra whitespace
-        tweet_data = re.sub(r'^ ', '', tweet_data, flags=re.MULTILINE)  # Leading spaces
-        return tweet_data
 
 
 if __name__ == "__main__":
