@@ -72,3 +72,4 @@ ubuntu-xenial-16.04-cloudimg-console.log
 data/*
 !data/.gitkeep
 config.py
+testconfig.py

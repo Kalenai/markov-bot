@@ -25,9 +25,13 @@ class Markov(object):
         try:
             self.conn = psycopg2.connect(
                 dbname=config.DATABASE_NAME,
-                user=config.DATABASE_USER
+                user=config.DATABASE_USER,
+                password=config.DATABASE_PASSWORD,
+                host=config.DATABASE_URL,
+                port=config.DATABASE_PORT
                 )
             self.cur = self.conn.cursor()
+            logging.debug("Connection successful: %s", self.conn)
         except psycopg2.Error as e:
             print(e, "Could not connect to database.", sep='')
 
@@ -37,6 +41,7 @@ class Markov(object):
         """
         self.cur.close()
         self.conn.close()
+        logging.debug("Disconnected from database: %s", self.conn)
 
     def _is_sentence_end(self, word):
         """

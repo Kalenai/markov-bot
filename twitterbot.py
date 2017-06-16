@@ -8,10 +8,6 @@ import twitter
 import config
 from markov import Markov
 
-if config.DEBUG is True:
-    logging.basicConfig(level=logging.DEBUG)
-else:
-    logging.basicConfig(level=logging.INFO)
 
 # The JSON dump file for last IDs seen.
 bot_data_file = config.BOT_DATA_FILE
@@ -83,7 +79,7 @@ class TwitterBot(object):
 
         return tweet
 
-    def _post_tweet(self, status, reply_to=None, debug=False):
+    def _post_tweet(self, status, reply_to=None, live_tweet=config.LIVE_TWEET):
         """
         Post a status to Twitter.
         """
@@ -92,13 +88,14 @@ class TwitterBot(object):
             self._connect_api()
 
         # Return the tweet text without posting it
-        if debug:
-            logging.debug("Debug Enabled. Returning tweet without posting.")
+        if not live_tweet:
+            logging.info("Live tweeting disabled. Returning tweet without posting.")
+            logging.info("Unposted status: %s", status)
             return status
 
         # Post the status
         status = self.api.PostUpdate(status, in_reply_to_status_id=reply_to)
-        print(status.text.encode('utf-8'))
+        logging.info(status.text.encode('utf-8'))
 
     @staticmethod
     def clean_data(tweet_data):
@@ -119,11 +116,11 @@ class TwitterBot(object):
 
     def dump_data(self):
         """
-        Dump tweet id data to json.
+        Dump tweet ID data to json.
         """
         with open(bot_data_file, 'w') as f:
-            logging.info("Dumping last id seen to json: " + str(self.last_id_seen))
-            logging.info("Dumping reply last id seen to json: " + str(self.last_reply_id_seen))
+            logging.info("Dumping last id seen to json: %s", self.last_id_seen)
+            logging.info("Dumping reply last id seen to json: %s", self.last_reply_id_seen)
             json.dump({"last_id_seen": self.last_id_seen,
                        "last_reply_id_seen": self.last_reply_id_seen}, f)
 
@@ -134,7 +131,7 @@ class TwitterBot(object):
         tweet = self._compose_tweet()
         self._post_tweet(tweet)
 
-    def reply_tweets(self, debug=False):
+    def reply_tweets(self):
         """
         Get all replies and mentions and respond to them.
         """
@@ -144,9 +141,10 @@ class TwitterBot(object):
 
         # Get any new replies or mentions
         replies = self.api.GetMentions(since_id=self.last_reply_id_seen)
+        logging.info(replies)
 
         # Return None if there are no new replies
-        if replies is None:
+        if replies == []:
             logging.info("No new replies to respond to.")
             return replies
 
@@ -156,9 +154,10 @@ class TwitterBot(object):
         # Post a response to each reply
         for reply in replies:
             tweet = self._compose_tweet()
-            self._post_tweet(tweet, reply_to=reply.id, debug=debug)
+            self._post_tweet(tweet, reply_to=reply.id)
 
     def update_tweet_database(self):
+
         """
         Have the markov bot update its database with the most recent tweets.
         """
@@ -173,7 +172,7 @@ class TwitterBot(object):
             return
 
         self.last_id_seen = tweets[0].id
-        logging.info("Setting last_id_seen to: " + str(self.last_id_seen))
+        logging.info("Setting last_id_seen to: %s", self.last_id_seen)
 
         def _tweet_data_gen(tweets):
             for status in tweets:
@@ -182,10 +181,3 @@ class TwitterBot(object):
                     yield word
 
         self.markov.update_db(_tweet_data_gen(tweets))
-
-
-if __name__ == "__main__":
-    bot = TwitterBot()
-    # bot.update_tweet_database()
-    replies = bot.reply_tweets()
-    print(replies[0].id)
