@@ -161,6 +161,7 @@ class TwitterBot(object):
         # Post a response to each reply
         for reply in replies:
             tweet = self._compose_tweet()
+            logger.info("Replying to tweet ID: %s", reply.id)
             self._post_tweet(tweet, reply_to=reply.id)
 
     def update_tweet_database(self):

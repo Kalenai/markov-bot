@@ -114,7 +114,6 @@ class Markov(object):
             begin = self.cur.fetchone()
 
         logging.debug("Current beginning:" + str(begin))
-        print(begin)
         sentence.append(begin[0])
         sentence.append(begin[1])
 
@@ -137,15 +136,11 @@ class Markov(object):
             words, probs = zip(*self.cur.fetchall())
             words = list(words)
             probs = list(probs)
-            print("Probs before conversion: " + str(probs))
 
             # Convert the frequencies into probabilities
             probs_sum = sum(probs)
             for index, num in enumerate(probs):
                 probs[index] = num / probs_sum
-
-            print(words)
-            print(probs)
 
             # Choose the next word and add it to the sentence
             choice = random.random()
