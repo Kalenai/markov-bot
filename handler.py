@@ -11,10 +11,11 @@ else:
     logger.setLevel(logging.INFO)
 
 
-def handler(context=None, event=None):
+def handler(context, event):
     """
     The handler function to be used by AWS Lambda.
     """
+    logger.info("Got event: %s", event)
     # Initialize the bot and update the database with any new tweets.
     logger.info("Initializing TwitterBot")
     bot = twitterbot.TwitterBot()
@@ -38,6 +39,3 @@ def handler(context=None, event=None):
     bot.dump_data()
 
     logger.info("All finished.")
-
-if __name__ == '__main__':
-    handler()

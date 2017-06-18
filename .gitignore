@@ -73,3 +73,4 @@ data/*
 !data/.gitkeep
 config.py
 testconfig.py
+kalenai_ebawks
