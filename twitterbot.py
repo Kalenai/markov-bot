@@ -3,11 +3,13 @@ import json
 import logging
 import random
 import re
+import time
 import twitter
 
 import config
 from markov import Markov
 
+# TODO: Fix logging to properly use handlers
 logger = logging.getLogger()
 
 if config.DEBUG:
@@ -15,6 +17,9 @@ if config.DEBUG:
 else:
     logger.setLevel(logging.INFO)
 
+logging.basicConfig(filename=config.LOG_DIRECTORY + 'twitterbot_log_' + time.strftime("%Y-%m-%d") + '.log',
+                    filemode='a',
+                    level=logging.DEBUG)
 
 # The JSON dump file for last IDs seen.
 bot_data_file = config.BOT_DATA_FILE
@@ -38,7 +43,8 @@ class TwitterBot(object):
                 self.last_id_seen = id_data['last_id_seen']
                 self.last_reply_id_seen = id_data['last_reply_id_seen']
         except FileNotFoundError as e:
-            print(e, "Could not find bot_data file.  Have you run the setup script yet?", sep='')
+            logger.error("Could not find bot_data file.  Have you run the setup script yet?", exc_info=e)
+            raise e
 
     def _connect_api(self):
         """
@@ -51,7 +57,8 @@ class TwitterBot(object):
                                    access_token_secret=config.ACCESS_TOKEN_SECRET)
             return self.api.VerifyCredentials()
         except twitter.error.TwitterError as e:
-            print(e, "\nCould not connect to the Twitter API.  Check you config file credentials.")
+            logger.error("Could not connect to the Twitter API.  Check you config file credentials.", exc_info=e)
+            raise e
 
     def _compose_tweet(self):
         """
@@ -63,10 +70,16 @@ class TwitterBot(object):
             """
             Add another sentence.
             """
-            while True:
+            fail_count = 0
+            while fail_count <= 3:
                 test_sentence = self.markov.generate_sentence()
-                if len(tweet + " " + test_sentence) <= 140:
+                if test_sentence is None:
+                    fail_count += 1
+                    logger.warning("No test sentence returned.  Trying again.")
+                elif len(tweet + " " + test_sentence) <= 140:
                     return test_sentence
+            logger.warning("Failed to generate a sentence!")
+            raise RuntimeError("Unable to generate sentences.")
 
         # Generate the first sentence
         tweet = tweet + " " + _add_sentence(tweet)
@@ -162,7 +175,10 @@ class TwitterBot(object):
         for reply in replies:
             tweet = self._compose_tweet()
             logger.info("Replying to tweet ID: %s", reply.id)
-            self._post_tweet(tweet, reply_to=reply.id)
+            if tweet:
+                self._post_tweet(tweet, reply_to=reply.id)
+            else:
+                logger.warning("Unable to successfully generate a tweet to post.")
 
     def update_tweet_database(self):
 
@@ -190,12 +206,13 @@ class TwitterBot(object):
 
         self.markov.update_db(_tweet_data_gen(tweets))
 
-if __name__ == '__main__':
+if __name__ == "__main__":
+    logger.info("Running TwitterBot.  Current time is %s", time.strftime("%H:%M:%S"))
     # Initialize the bot and update the database with any new tweets.
     logger.info("Initializing TwitterBot")
     bot = TwitterBot()
     logger.info("Updating tweet database.")
-    bot.update_tweet_database()
+    # bot.update_tweet_database()
 
     # Have a chance at posting a new tweet.
     roll = random.randrange(config.TWEET_ODDS)

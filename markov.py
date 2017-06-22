@@ -32,8 +32,9 @@ class Markov(object):
                 )
             self.cur = self.conn.cursor()
             logging.debug("Connection successful: %s", self.conn)
-        except psycopg2.Error as e:
-            print(e, "Could not connect to database.", sep='')
+        except (psycopg2.Error, psycopg2.OperationalError) as e:
+            logging.error("Could not connect to database.", exc_info=e)
+            raise e
 
     def _disconnect_db(self):
         """
@@ -52,11 +53,9 @@ class Markov(object):
     def update_db(self, word_gen):
         """
         Update the transition matrix database with the most recent data.
+        Returns 'None' if it fails to generate a sentence.
         """
         self._connect_db()
-        if self.conn is None or self.cur is None:
-            logging.error("Was not able to establish connection to the database. Check your config file.")
-            return
 
         # Add the row if it doesn't exist, else iterate the frequency counter by 1
         upsert_db = """
@@ -123,6 +122,10 @@ class Markov(object):
             if self._is_sentence_end(sentence[-1]):
                 break
 
+            if len(sentence) > 100:
+                logging.warning("Sentence getting too long without returning.  Returning 'None'.")
+                return None
+
             # Query the database for possible next words and their frequencies
             self.cur.execute(
                 """
@@ -136,6 +139,11 @@ class Markov(object):
             words, probs = zip(*self.cur.fetchall())
             words = list(words)
             probs = list(probs)
+
+            # Break out of the loop and return 'None' if no words retrieved
+            if words == [] or probs == []:
+                logging.warning("Unable to find next word in the sentence.  Returning 'None'.")
+                return None
 
             # Convert the frequencies into probabilities
             probs_sum = sum(probs)
