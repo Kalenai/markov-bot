@@ -5,6 +5,8 @@ import random
 
 import config
 
+markov_logger = logging.getLogger('twitterbot.markov')
+
 
 class Markov(object):
     """
@@ -31,10 +33,11 @@ class Markov(object):
                 port=config.DATABASE_PORT
                 )
             self.cur = self.conn.cursor()
-            logging.debug("Connection successful: %s", self.conn)
-        except (psycopg2.Error, psycopg2.OperationalError) as e:
-            logging.error("Could not connect to database.", exc_info=e)
-            raise e
+            markov_logger.debug("Connection successful: %s", self.conn)
+        except (psycopg2.Error, psycopg2.OperationalError) as error:
+            markov_logger.error("Could not connect to database.",
+                                exc_info=error)
+            raise error
 
     def _disconnect_db(self):
         """
@@ -42,7 +45,7 @@ class Markov(object):
         """
         self.cur.close()
         self.conn.close()
-        logging.debug("Disconnected from database: %s", self.conn)
+        markov_logger.debug("Disconnected from database: %s", self.conn)
 
     def _is_sentence_end(self, word):
         """
@@ -112,7 +115,7 @@ class Markov(object):
             )
             begin = self.cur.fetchone()
 
-        logging.debug("Current beginning:" + str(begin))
+        markov_logger.debug("Current beginning:" + str(begin))
         sentence.append(begin[0])
         sentence.append(begin[1])
 
@@ -123,7 +126,7 @@ class Markov(object):
                 break
 
             if len(sentence) > 100:
-                logging.warning("Sentence getting too long without returning.  Returning 'None'.")
+                markov_logger.warning("Sentence getting too long without returning.  Returning 'None'.")
                 return None
 
             # Query the database for possible next words and their frequencies
@@ -142,7 +145,7 @@ class Markov(object):
 
             # Break out of the loop and return 'None' if no words retrieved
             if words == [] or probs == []:
-                logging.warning("Unable to find next word in the sentence.  Returning 'None'.")
+                markov_logger.warning("Unable to find next word in the sentence.  Returning 'None'.")
                 return None
 
             # Convert the frequencies into probabilities
@@ -158,7 +161,7 @@ class Markov(object):
                 if choice <= 0 or word == final_word:
                     next_word = word
 
-            logging.debug("Adding next word:" + str(next_word))
+            markov_logger.debug("Adding next word:" + str(next_word))
             sentence.append(next_word)
 
         self._disconnect_db()

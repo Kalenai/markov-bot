@@ -63,9 +63,9 @@ if __name__ == '__main__':
 
     logging.info("Cleaning up Twitter data.")
     dataframe = pd.read_csv(tweet_data_file)
-    with open(clean_data_file, 'r+') as f:
+    with open(clean_data_file, 'r+') as file:
         for line in dataframe.text.iteritems():
-            f.write(twitterbot.clean_data(line[1] + "\n"))
+            file.write(twitterbot.clean_data(line[1] + "\n"))
 
     logging.info("Training the database.")
     gen = generate_word(clean_data_file)
