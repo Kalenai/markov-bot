@@ -28,6 +28,6 @@ CLEAN_DATA_FILE = BASE_DIR + '/data/cleaned_tweet_data.txt'  # The location you 
 BOT_DATA_FILE = BASE_DIR + '/data/bot_data.json'  # The location you want to save the bot's JSON data file.
 LOG_DIRECTORY = BASE_DIR + '/logs/'  # The directory you where you want to save log files.
 
-TWEET_ODDS = 1  # The odds of tweeting each interval, calculated as 1 : TWEET_ODDS.
-DEBUG = True  # Whether to show detailed debug information in the console.
+TWEET_ODDS = 3  # The odds of tweeting each interval, calculated as 1 : TWEET_ODDS.
+DEBUG = False  # Whether to show detailed debug information in the console.
 LIVE_TWEET = False  # Whether to actually post tweets to the account.

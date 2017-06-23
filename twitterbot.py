@@ -221,7 +221,7 @@ if __name__ == "__main__":
     twitterbot_logger.info("Initializing TwitterBot")
     bot = TwitterBot()
     twitterbot_logger.info("Updating tweet database.")
-    # bot.update_tweet_database()
+    bot.update_tweet_database()
 
     # Have a chance at posting a new tweet.
     roll = random.randrange(config.TWEET_ODDS)

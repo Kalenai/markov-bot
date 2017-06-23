@@ -71,6 +71,7 @@ ubuntu-xenial-16.04-cloudimg-console.log
 # Project Files
 data/*
 !data/.gitkeep
-config.py
+prod_config.py
 testconfig.py
 dist
+create_table_script.sql
