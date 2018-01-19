@@ -179,6 +179,7 @@ class TwitterBot(object):
 
         # Update the bot with the latest reply ID seen
         self.last_reply_id_seen = replies[0].id
+        twitterbot_logger.info("Setting last_reply_id_seen to: %s", self.last_reply_id_seen)
 
         # Post a response to each reply
         for reply in replies:
@@ -202,6 +203,10 @@ class TwitterBot(object):
 
         if not tweets:
             twitterbot_logger.info("Database is up to date with the latest ID seen.")
+            return
+
+        if len(tweets) <= 1 and len(tweets[0].text.split()) <= 2:
+            twitterbot_logger.info("Not enough new words to add to the database.")
             return
 
         self.last_id_seen = tweets[0].id
