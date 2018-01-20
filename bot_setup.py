@@ -19,10 +19,6 @@ tweet_data_file = config.TWEET_DATA_FILE
 clean_data_file = config.CLEAN_DATA_FILE
 bot_data_file = config.BOT_DATA_FILE
 
-markov = Markov()
-twitterbot = TwitterBot()
-
-
 def generate_word(clean_data):
     with open(clean_data_file, 'r') as f:
         for line in f:
@@ -31,6 +27,14 @@ def generate_word(clean_data):
 
 
 if __name__ == '__main__':
+    logging.info("Initializing bot_data file.")
+    with open(bot_data_file, 'w') as file:
+            json.dump({"last_id_seen": None,
+                       "last_reply_id_seen": None}, file)
+
+    markov = Markov()
+    twitterbot = TwitterBot()
+
     logging.info("Connecting to the database.")
     markov._connect_db()
     markov.cur.execute(
@@ -63,7 +67,7 @@ if __name__ == '__main__':
 
     logging.info("Cleaning up Twitter data.")
     dataframe = pd.read_csv(tweet_data_file)
-    with open(clean_data_file, 'r+') as file:
+    with open(clean_data_file, 'w') as file:
         for line in dataframe.text.iteritems():
             file.write(twitterbot.clean_data(line[1] + "\n"))
 

@@ -191,7 +191,6 @@ class TwitterBot(object):
                 twitterbot_logger.warning("Unable to successfully generate a tweet to post.")
 
     def update_tweet_database(self):
-
         """
         Have the markov bot update its database with the most recent tweets.
         """
@@ -237,8 +236,9 @@ if __name__ == "__main__":
         twitterbot_logger.info("Rolled %s. Not posting this time.", roll)
 
     # Respond to any recent replies or mentions.
-    twitterbot_logger.info("Responding to new tweets and mentions.")
-    bot.reply_tweets()
+    # Currently skipped because it doesn't work.
+    # twitterbot_logger.info("Responding to new tweets and mentions.")
+    # bot.reply_tweets()
 
     # Dump update information to JSON.
     twitterbot_logger.info("Dumping bot data to JSON")
